@@ -1,0 +1,8 @@
+{
+  "name": "PromptMaster AI",
+  "description": "The ultimate AI Prompt Generator SaaS & App Builder. Generate ChatGPT, Coding, and Social Media prompts instantly using Gemini.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
