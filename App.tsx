@@ -1,5 +1,5 @@
 import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
-import { Menu, Moon, Sun, Bell, User as UserIcon, Youtube, AlertTriangle } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, User as UserIcon, Youtube, AlertTriangle, Search, Filter, Trash2, Star, ArrowUpDown, Heart, LayoutGrid, List as ListIcon } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { PromptGenerator } from './components/PromptGenerator';
 import { AIChat } from './components/AIChat';
@@ -53,10 +53,42 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
+  
+  // Library Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [sortBy, setSortBy] = useState<'date' | 'alpha' | 'favorites'>('date');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
+  };
+
+  const toggleFavorite = (id: string) => {
+    setSavedPrompts(prev => prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p));
+  };
+
+  const deletePrompt = (id: string) => {
+    if (confirm('Are you sure you want to delete this prompt?')) {
+      setSavedPrompts(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  const getFilteredPrompts = () => {
+    return savedPrompts
+      .filter(p => {
+        const matchesSearch = (p.title + p.content + p.category).toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
+        const matchesFav = !showFavoritesOnly || p.isFavorite;
+        return matchesSearch && matchesCategory && matchesFav;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'date') return b.createdAt - a.createdAt; // Newest first
+        if (sortBy === 'alpha') return a.title.localeCompare(b.title);
+        if (sortBy === 'favorites') return (b.isFavorite === a.isFavorite) ? 0 : b.isFavorite ? 1 : -1;
+        return 0;
+      });
   };
 
   const renderContent = () => {
@@ -70,22 +102,145 @@ function AppContent() {
       case AppView.IMAGE_EDITOR:
         return <ImageStudio />;
       case AppView.LIBRARY:
+        const displayedPrompts = getFilteredPrompts();
+        const uniqueCategories = ['All', ...new Set(savedPrompts.map(p => p.category))];
+
         return (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Saved Prompts ({savedPrompts.length})</h2>
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <ListIcon className="text-brand-purple" /> My Library
+                <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                  {savedPrompts.length}
+                </span>
+              </h2>
+              <button 
+                onClick={() => setCurrentView(AppView.GENERATOR)}
+                className="px-4 py-2 bg-brand-orange text-white rounded-lg hover:bg-orange-600 text-sm font-bold shadow-md transition-colors"
+              >
+                + New Prompt
+              </button>
+            </div>
+
+            {/* Search & Filters Toolbar */}
+            <div className="bg-white dark:bg-brand-card p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-4 md:space-y-0 md:flex gap-4 items-center flex-wrap">
+              {/* Search */}
+              <div className="flex-1 relative min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search prompts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-brand-purple outline-none dark:text-white"
+                />
+              </div>
+
+              {/* Filters Group */}
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+                <div className="relative">
+                  <select 
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="appearance-none pl-9 pr-8 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 focus:ring-brand-purple outline-none cursor-pointer dark:text-gray-200"
+                  >
+                    {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                </div>
+
+                <div className="relative">
+                   <select 
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="appearance-none pl-9 pr-8 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 focus:ring-brand-purple outline-none cursor-pointer dark:text-gray-200"
+                  >
+                    <option value="date">Date (Newest)</option>
+                    <option value="alpha">Name (A-Z)</option>
+                    <option value="favorites">Popularity</option>
+                  </select>
+                  <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                </div>
+
+                <button
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                    showFavoritesOnly 
+                      ? 'bg-brand-red/10 border-brand-red text-brand-red' 
+                      : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  <Heart size={14} className={showFavoritesOnly ? 'fill-current' : ''} />
+                  <span className="hidden sm:inline">Favorites</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Results Grid */}
             <div className="grid gap-4">
               {savedPrompts.length === 0 ? (
-                <p className="text-gray-500">No prompts saved yet.</p>
+                <div className="text-center py-20 bg-white dark:bg-brand-card rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                  <LayoutGrid className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">No prompts saved yet</h3>
+                  <p className="text-gray-500 mb-6">Create your first AI masterpiece in the Generator.</p>
+                  <button 
+                    onClick={() => setCurrentView(AppView.GENERATOR)}
+                    className="px-6 py-2 bg-brand-orange text-white rounded-full font-bold hover:shadow-lg transition-all"
+                  >
+                    Go to Generator
+                  </button>
+                </div>
+              ) : displayedPrompts.length === 0 ? (
+                <div className="text-center py-12">
+                   <p className="text-gray-500 text-lg">No prompts match your search filters.</p>
+                   <button 
+                    onClick={() => { setSearchQuery(''); setFilterCategory('All'); setShowFavoritesOnly(false); }}
+                    className="mt-4 text-brand-purple hover:underline"
+                   >
+                     Clear all filters
+                   </button>
+                </div>
               ) : (
-                savedPrompts.map(p => (
-                  <div key={p.id} className="bg-white dark:bg-brand-card p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-bold text-brand-orange uppercase tracking-wider">{p.category}</span>
-                      <span className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</span>
+                displayedPrompts.map(p => (
+                  <div key={p.id} className="group bg-white dark:bg-brand-card p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-brand-purple/50 transition-all hover:shadow-md">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs font-bold text-brand-orange uppercase tracking-wider">
+                          {p.category}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(p.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button 
+                          onClick={() => toggleFavorite(p.id)}
+                          className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${p.isFavorite ? 'text-yellow-500' : 'text-gray-400'}`}
+                        >
+                          <Star size={16} className={p.isFavorite ? 'fill-current' : ''} />
+                        </button>
+                        <button 
+                          onClick={() => deletePrompt(p.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="font-medium text-gray-900 dark:text-gray-200 mb-2">{p.title}</p>
-                    <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg text-sm font-mono text-gray-600 dark:text-gray-300 line-clamp-3">
-                      {p.content}
+                    
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-2 truncate pr-8">{p.title}</h3>
+                    
+                    <div className="relative bg-gray-50 dark:bg-gray-900 p-4 rounded-lg text-sm font-mono text-gray-600 dark:text-gray-300">
+                      <p className="line-clamp-3 group-hover:line-clamp-none transition-all duration-300">
+                        {p.content}
+                      </p>
+                      <button 
+                        onClick={() => {navigator.clipboard.writeText(p.content); alert('Copied!')}}
+                        className="absolute top-2 right-2 p-1.5 bg-white dark:bg-black rounded border border-gray-200 dark:border-gray-700 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-brand-purple"
+                        title="Copy to clipboard"
+                      >
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                      </button>
                     </div>
                   </div>
                 ))
