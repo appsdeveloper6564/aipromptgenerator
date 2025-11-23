@@ -1,10 +1,17 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeminiModel } from '../types';
 
-// Initialize the Gemini API client safely
-// CRITICAL: process.env.API_KEY is automatically injected.
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// Lazy initialization to prevent startup crashes
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = (): GoogleGenAI => {
+  if (!aiInstance) {
+    const apiKey = process.env.API_KEY || '';
+    // Initialize even if empty to allow app to load, calls will fail gracefully later
+    aiInstance = new GoogleGenAI({ apiKey: apiKey });
+  }
+  return aiInstance;
+};
 
 export const generatePromptContent = async (
   topic: string, 
@@ -12,8 +19,9 @@ export const generatePromptContent = async (
   tone: string
 ): Promise<string> => {
   try {
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      return "API Key is missing. Please configure your environment variables.";
+      return "⚠️ API Key is missing. Please check your configuration.";
     }
 
     const prompt = `
@@ -26,7 +34,7 @@ export const generatePromptContent = async (
       Return ONLY the prompt text, ready to be copied. Do not add conversational filler.
     `;
 
-    // Using Flash Lite for low latency as requested
+    const ai = getAI();
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: GeminiModel.FLASH_LITE,
       contents: prompt,
@@ -39,7 +47,7 @@ export const generatePromptContent = async (
     return response.text || "Failed to generate prompt. Please try again.";
   } catch (error) {
     console.error("Error generating prompt:", error);
-    return "An error occurred while communicating with Gemini.";
+    return "An error occurred while communicating with Gemini. Check console for details.";
   }
 };
 
@@ -48,11 +56,12 @@ export const sendChatMessage = async (
   history: { role: 'user' | 'model', parts: { text: string }[] }[]
 ): Promise<string> => {
   try {
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
       return "System Error: API Key missing.";
     }
 
-    // Using Pro model for better reasoning in chat
+    const ai = getAI();
     const chat = ai.chats.create({
       model: GeminiModel.PRO,
       history: history,
@@ -65,7 +74,7 @@ export const sendChatMessage = async (
     return response.text || "I couldn't generate a response.";
   } catch (error) {
     console.error("Chat error:", error);
-    return "Sorry, I'm having trouble connecting right now.";
+    return "Sorry, I'm having trouble connecting right now. Please try again later.";
   }
 };
 
@@ -75,12 +84,13 @@ export const editImageWithPrompt = async (
   mimeType: string = 'image/png'
 ): Promise<string | null> => {
   try {
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
       alert("API Key is missing.");
       return null;
     }
 
-    // Using Flash Image (Nano Banana equivalent) for image editing
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: GeminiModel.IMAGE,
       contents: {
@@ -98,7 +108,6 @@ export const editImageWithPrompt = async (
       }
     });
 
-    // Extract image from response
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
         return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
@@ -108,6 +117,7 @@ export const editImageWithPrompt = async (
     return null;
   } catch (error) {
     console.error("Image edit error:", error);
-    throw error;
+    alert("Failed to process image. See console for details.");
+    return null;
   }
 };

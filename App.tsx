@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, Moon, Sun, Bell, User as UserIcon, Youtube } from 'lucide-react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
+import { Menu, Moon, Sun, Bell, User as UserIcon, Youtube, AlertTriangle } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { PromptGenerator } from './components/PromptGenerator';
 import { AIChat } from './components/AIChat';
@@ -7,7 +7,48 @@ import { ImageStudio } from './components/ImageStudio';
 import { Home } from './components/Home';
 import { AppView, Prompt } from './types';
 
-function App() {
+// Error Boundary Component
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50 dark:bg-gray-900 text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Something went wrong</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">The application encountered an unexpected error.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-brand-orange text-white rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Reload Page
+          </button>
+          {this.state.error && (
+            <pre className="mt-4 p-4 bg-gray-200 dark:bg-black rounded text-xs text-left overflow-auto max-w-lg">
+              {this.state.error.toString()}
+            </pre>
+          )}
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function AppContent() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -152,4 +193,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
