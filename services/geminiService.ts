@@ -1,9 +1,10 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeminiModel } from '../types';
 
-// Initialize the Gemini API client
+// Initialize the Gemini API client safely
 // CRITICAL: process.env.API_KEY is automatically injected.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = process.env.API_KEY || '';
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export const generatePromptContent = async (
   topic: string, 
@@ -11,6 +12,10 @@ export const generatePromptContent = async (
   tone: string
 ): Promise<string> => {
   try {
+    if (!apiKey) {
+      return "API Key is missing. Please configure your environment variables.";
+    }
+
     const prompt = `
       You are an expert Prompt Engineer.
       Create a highly effective, detailed, and professional prompt for:
@@ -43,6 +48,10 @@ export const sendChatMessage = async (
   history: { role: 'user' | 'model', parts: { text: string }[] }[]
 ): Promise<string> => {
   try {
+    if (!apiKey) {
+      return "System Error: API Key missing.";
+    }
+
     // Using Pro model for better reasoning in chat
     const chat = ai.chats.create({
       model: GeminiModel.PRO,
@@ -66,6 +75,11 @@ export const editImageWithPrompt = async (
   mimeType: string = 'image/png'
 ): Promise<string | null> => {
   try {
+    if (!apiKey) {
+      alert("API Key is missing.");
+      return null;
+    }
+
     // Using Flash Image (Nano Banana equivalent) for image editing
     const response = await ai.models.generateContent({
       model: GeminiModel.IMAGE,
