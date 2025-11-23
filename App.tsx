@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Moon, Sun, Bell, User as UserIcon } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, User as UserIcon, Youtube } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { PromptGenerator } from './components/PromptGenerator';
 import { AIChat } from './components/AIChat';
@@ -89,7 +89,7 @@ function App() {
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-brand-dark transition-colors duration-200">
         {/* Top Header */}
-        <header className="h-16 bg-white dark:bg-brand-card border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 lg:px-8 shrink-0">
+        <header className="h-16 bg-white dark:bg-brand-card border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 lg:px-8 shrink-0 z-20 relative">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(true)}
@@ -97,9 +97,9 @@ function App() {
             >
               <Menu size={24} />
             </button>
-            <div className="hidden md:flex items-center text-xs font-medium text-brand-red bg-brand-red/10 px-3 py-1 rounded-full animate-pulse">
-              Target: 1000 Subscribers (Need 950 more!)
-            </div>
+            <h1 className="lg:hidden text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-purple">
+              PromptMaster
+            </h1>
           </div>
 
           <div className="flex items-center gap-4">
@@ -124,6 +124,24 @@ function App() {
             </button>
           </div>
         </header>
+
+        {/* Prominent Subscriber Notice Banner */}
+        <div className="bg-gradient-to-r from-brand-orange via-brand-red to-brand-purple text-white py-3 px-4 text-center shadow-md relative z-10 animate-fade-in">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3">
+            <span className="flex items-center gap-2 font-medium text-sm sm:text-base">
+              <Youtube size={20} className="animate-bounce" />
+              Target: 1000 Subscribers (Need 950 more!)
+            </span>
+            <a 
+              href="https://youtube.com/@mcpro_mafia?si=Q7UqOF3oTO3KsyhF" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-1 bg-white text-brand-red rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-gray-100 hover:scale-105 transition-all shadow-sm"
+            >
+              Subscribe Now
+            </a>
+          </div>
+        </div>
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8">
