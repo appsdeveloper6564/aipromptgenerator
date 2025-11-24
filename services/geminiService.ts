@@ -1,13 +1,33 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeminiModel } from '../types';
 
+// Declare process for TypeScript to avoid compilation errors, but check existence at runtime
+declare const process: any;
+
+// Helper to safely get API Key in browser environment
+const getApiKey = (): string => {
+  try {
+    // Check global process (Node/Build time)
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    // Check window.process (Browser Polyfill)
+    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
+      return (window as any).process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Error accessing environment variables", e);
+  }
+  return '';
+};
+
 // Lazy initialization to prevent startup crashes
 let aiInstance: GoogleGenAI | null = null;
 
 const getAI = (): GoogleGenAI => {
   if (!aiInstance) {
-    const apiKey = process.env.API_KEY || '';
-    // Initialize even if empty to allow app to load, calls will fail gracefully later
+    const apiKey = getApiKey();
+    // Initialize even if empty to allow app to load; calls will fail gracefully later with a clear message
     aiInstance = new GoogleGenAI({ apiKey: apiKey });
   }
   return aiInstance;
@@ -19,7 +39,7 @@ export const generatePromptContent = async (
   tone: string
 ): Promise<string> => {
   try {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       return "⚠️ API Key is missing. Please check your configuration.";
     }
@@ -56,7 +76,7 @@ export const sendChatMessage = async (
   history: { role: 'user' | 'model', parts: { text: string }[] }[]
 ): Promise<string> => {
   try {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       return "System Error: API Key missing.";
     }
@@ -84,7 +104,7 @@ export const editImageWithPrompt = async (
   mimeType: string = 'image/png'
 ): Promise<string | null> => {
   try {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       alert("API Key is missing.");
       return null;

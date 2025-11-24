@@ -8,7 +8,7 @@ import { Home } from './components/Home';
 import { AppView, Prompt } from './types';
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -17,7 +17,7 @@ interface ErrorBoundaryState {
 }
 
 // Error Boundary Component
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -87,15 +87,22 @@ function AppContent() {
   const getFilteredPrompts = () => {
     return savedPrompts
       .filter(p => {
-        const matchesSearch = (p.title + p.content + p.category).toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
+        const title = p.title || '';
+        const content = p.content || '';
+        const category = p.category || '';
+        const matchesSearch = (title + content + category).toLowerCase().includes((searchQuery || '').toLowerCase());
+        const matchesCategory = filterCategory === 'All' || category === filterCategory;
         const matchesFav = !showFavoritesOnly || p.isFavorite;
         return matchesSearch && matchesCategory && matchesFav;
       })
       .sort((a, b) => {
-        if (sortBy === 'date') return b.createdAt - a.createdAt; // Newest first
-        if (sortBy === 'alpha') return a.title.localeCompare(b.title);
-        if (sortBy === 'favorites') return (b.isFavorite === a.isFavorite) ? 0 : b.isFavorite ? 1 : -1;
+        if (sortBy === 'date') return (b.createdAt || 0) - (a.createdAt || 0); // Newest first
+        if (sortBy === 'alpha') return (a.title || '').localeCompare(b.title || '');
+        if (sortBy === 'favorites') {
+          const valA = a.isFavorite ? 1 : 0;
+          const valB = b.isFavorite ? 1 : 0;
+          return valB - valA;
+        }
         return 0;
       });
   };
@@ -322,35 +329,36 @@ function AppContent() {
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
-            <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-brand-orange text-white flex items-center justify-center font-bold text-sm">
-                U
-              </div>
+            <button className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-orange to-brand-purple flex items-center justify-center text-white font-bold cursor-pointer">
+              <UserIcon size={16} />
+            </div>
           </div>
         </header>
 
-        {/* Prominent Subscriber Notice Banner */}
-        <div className="bg-gradient-to-r from-brand-orange via-brand-red to-brand-purple text-white py-3 px-4 text-center shadow-md relative z-10 animate-fade-in">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3">
-            <span className="flex items-center gap-2 font-medium text-sm sm:text-base">
-              <Youtube size={20} className="animate-bounce" />
-              Target: 1000 Subscribers (Need 950 more!)
-            </span>
-            <a 
-              href="https://youtube.com/@mcpro_mafia?si=Q7UqOF3oTO3KsyhF" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-1 bg-white text-brand-red rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-gray-100 hover:scale-105 transition-all shadow-sm"
-            >
-              Subscribe Now
-            </a>
+        {/* Persistent Goal Banner */}
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-between text-xs md:text-sm font-medium shadow-md z-10 relative">
+          <div className="flex items-center gap-2">
+            <Youtube size={16} />
+            <span className="font-bold">Target: 1000 Subscribers (Need 950 more!)</span>
           </div>
+          <a 
+            href="https://youtube.com/@mcpro_mafia?si=Q7UqOF3oTO3KsyhF" 
+            target="_blank" 
+            className="bg-white text-red-600 px-3 py-1 rounded-full text-xs font-bold hover:bg-gray-100 transition-colors shadow-sm"
+          >
+            Subscribe Now
+          </a>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8">
-          {renderContent()}
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
+          <ErrorBoundary>
+            {renderContent()}
+          </ErrorBoundary>
         </div>
       </main>
     </div>
@@ -358,9 +366,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
-  );
+  return <AppContent />;
 }
