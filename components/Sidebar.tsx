@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Home, 
   Sparkles, 
@@ -10,7 +10,8 @@ import {
   X,
   Youtube,
   Download,
-  Gift
+  Gift,
+  Smartphone
 } from 'lucide-react';
 import { AppView } from '../types';
 
@@ -22,6 +23,31 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, setIsOpen }) => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
+
   const menuItems = [
     { id: AppView.HOME, label: 'Home', icon: <Home size={20} /> },
     { id: AppView.GENERATOR, label: 'Prompt Generator', icon: <Sparkles size={20} /> },
@@ -36,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
     { label: 'Mafia Tech Pro', icon: <Youtube size={16} />, url: 'https://youtube.com/@mafiatechpro?si=CtHV8-5g16ZJWYj_' },
     { label: 'Code Builder', icon: <Sparkles size={16} />, url: 'https://mafiacodebuilder.blogspot.com/' },
     { label: 'Spin to Win', icon: <Gift size={16} />, url: 'https://spintowinrewardsforfree.blogspot.com/' },
-    { label: 'Download Apps', icon: <Download size={16} />, url: 'https://dipanshu6564gmailcom.itch.io/' },
+    { label: 'Download Games', icon: <Download size={16} />, url: 'https://dipanshu6564gmailcom.itch.io/' },
   ];
 
   return (
@@ -72,6 +98,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
               <X size={24} />
             </button>
           </div>
+
+          {/* PWA Install Button (Visible only if installable) */}
+          {deferredPrompt && (
+            <div className="px-4 mb-2">
+              <button
+                onClick={handleInstallClick}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-orange text-white rounded-lg font-bold shadow-md hover:bg-orange-600 transition-colors animate-pulse"
+              >
+                <Smartphone size={18} /> Install App
+              </button>
+            </div>
+          )}
 
           {/* Nav Items */}
           <nav className="flex-1 px-4 space-y-2 overflow-y-auto">

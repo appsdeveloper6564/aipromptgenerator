@@ -6,6 +6,14 @@
     <meta name="monetag" content="5c48000422ff869c91e088ea3580209c">
     <meta name="google-site-verification" content="iAfFIzJGH6jn0JwRyuvW-YgOeeptNJ1XEih9ISLtVBg" />
     
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#E91E63" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PromptMaster">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/6134/6134346.png">
+    
     <!-- SEO & Open Graph Tags -->
     <title>PromptMaster AI - Ultimate Prompt Generator & App Builder</title>
     <meta name="description" content="Generate high-quality AI prompts for ChatGPT, Coding, YouTube, and more using Google Gemini. The #1 AI Tool for Creators and Developers." />
@@ -119,6 +127,21 @@
 
     <div id="root"></div>
     
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+
     <!-- Monetag Ads -->
     <script src="https://fpyf8.com/88/tag.min.js" data-zone="187542" async data-cfasync="false"></script>
     <script src="https://fpyf8.com/88/tag.min.js" data-zone="187544" async data-cfasync="false"></script>
